@@ -78,26 +78,26 @@ export const getOrdersByRestaurant = async (req, res) => {
 export const updateOrderStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, restaurant } = req.body;
+    const { status } = req.body;
 
     const validStatuses = ["Pending", "Preparing", "Ready", "Delivered", "Cancelled"];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ message: "Invalid status" });
     }
 
-    // Ensure order belongs to the restaurant making the request
-    const order = await Order.findOne({ _id: id, restaurant });
-    if (!order) {
-      return res.status(404).json({ message: "Order not found for this restaurant" });
+    const updatedOrder = await Order.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true }
+    );
+
+    if (!updatedOrder) {
+      return res.status(404).json({ message: "Order not found" });
     }
 
-    order.status = status;
-    await order.save();
-
-    res.json(order);
+    res.json(updatedOrder);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Failed to update order", error: err.message });
   }
 };
-
