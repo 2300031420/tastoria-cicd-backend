@@ -15,7 +15,7 @@ const app = express();
 // Middleware
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://marvelous-maamoul-f1d005.netlify.app"],
+    origin: ["http://localhost:5173", "https://tastoriahotels.netlify.app"],
     credentials: true,
   })
 );
