@@ -27,6 +27,7 @@ app.use('/api/restaurants', restaurantRoutes);
 app.use('/api/menu', menuRoutes);
 app.use('/api/orders',orderRoutes);
 app.use("/api/cart", cartRoutes);
+app.use("/api/admin", orderRoutes);
 // Connect MongoDB
 mongoose
   .connect(process.env.MONGO_URI, {

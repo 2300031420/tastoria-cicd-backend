@@ -1,7 +1,7 @@
 import Menu from "../models/Menu.js";
 import cloudinary from "../config/cloudinary.js";
 import multer from "multer";
-
+import Order from "../models/Orders.js"; 
 // Multer setup (buffer storage)
 const storage = multer.memoryStorage();
 export const upload = multer({ storage });
@@ -212,66 +212,105 @@ export const deleteMenuItem = async (req, res) => {
 export const getSalesData = async (req, res) => {
   try {
     const sales = await Order.aggregate([
+      { $unwind: "$items" },
       {
-        $group: {
-          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
-          revenue: { $sum: "$totalAmount" },
-          orders: { $sum: 1 }
-        }
-      },
-      { $sort: { _id: 1 } }
-    ]);
-
-    // Format to { date, revenue, orders }
-    const formatted = sales.map(s => ({
-      date: s._id,
-      revenue: s.revenue,
-      orders: s.orders
-    }));
-
-    res.json(formatted);
-  } catch (err) {
-    console.error("Sales data error:", err);
-    res.status(500).json({ error: "Failed to fetch sales data" });
-  }
-};
-
-export const getTrendingItems = async(req ,res)=>{
-         try{
-          const trending = await Order.Aggregate([
-            {$unwind:"$items"},
-            {
-              $group:{
-                _id:"$items.itemId",
-                totalSold:{$sum:"items.quantity"}
-              }
-            },
-            {$sort:{totalSold:-1}},
-            {$limit: 10},
-           {
         $lookup: {
-          from: "menus", // Menu collection
-          localField: "_id",
+          from: "menus",
+          localField: "items.itemId",
           foreignField: "_id",
           as: "menuItem"
         }
       },
       { $unwind: "$menuItem" },
       {
-        $project: {
-          _id: 1,
-          totalSold: 1,
-          name: "$menuItem.name",
-          category: "$menuItem.category",
-          price: "$menuItem.price",
-          image: "$menuItem.image"
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+          revenue: {
+            $sum: { $multiply: ["$items.quantity", "$menuItem.price"] }
+          },
+          orders: { $sum: 1 }
         }
-      }
+      },
+      { $sort: { _id: 1 } }
     ]);
 
-    res.json(trending);
-  } catch (err) {
-    console.error("Trending items error:", err);
-    res.status(500).json({ error: "Failed to fetch trending items" });
+    res.json({ sales });
+  } catch (error) {
+    console.error("❌ Sales data error:", error);
+    res.status(500).json({ error: "Failed to fetch sales data", details: error.message });
   }
 };
+
+
+
+export const getTrendingItems = async (req, res) => {
+  try {
+    console.log("🔹 Fetching trending items...");
+
+    // Step 1: Unwind items
+    const unwindStage = { $unwind: "$items" };
+
+    // Step 2: Group by itemId
+    const groupStage = {
+      $group: {
+        _id: "$items.itemId",
+        totalSold: { $sum: "$items.quantity" }
+      }
+    };
+
+    // Step 3: Sort and limit
+    const sortStage = { $sort: { totalSold: -1 } };
+    const limitStage = { $limit: 10 };
+
+    // Step 4: Lookup Menu
+    const lookupStage = {
+      $lookup: {
+        from: "menus",
+        localField: "_id",
+        foreignField: "_id",
+        as: "menuItem"
+      }
+    };
+
+    const unwindMenuStage = { $unwind: "$menuItem" };
+
+    const projectStage = {
+      $project: {
+        _id: 1,
+        totalSold: 1,
+        name: "$menuItem.name",
+        category: "$menuItem.category",
+        price: "$menuItem.price",
+        image: "$menuItem.image"
+      }
+    };
+
+    // Execute aggregation
+    const trending = await Order.aggregate([
+      unwindStage,
+      groupStage,
+      sortStage,
+      limitStage,
+      lookupStage,
+      unwindMenuStage,
+      projectStage
+    ]);
+
+    console.log("🔹 Aggregation result:", trending);
+
+    // Check if orders collection is empty
+    const totalOrders = await Order.countDocuments();
+    console.log("🔹 Total orders in DB:", totalOrders);
+
+    // Check if menu collection is empty
+    const totalMenuItems = await Menu.countDocuments();
+    console.log("🔹 Total menu items in DB:", totalMenuItems);
+
+    // Send response
+    res.json({ menu: trending });
+  } catch (err) {
+    console.error("❌ Trending items error:", err);
+    res.status(500).json({ error: "Failed to fetch trending items", details: err.message });
+  }
+};
+

@@ -35,6 +35,7 @@ const menuSchema = new mongoose.Schema({
   },
   image: {
     type: String,
+    
     default: ""
   },
   ingredients: {

@@ -74,6 +74,38 @@ export const getOrdersByRestaurant = async (req, res) => {
   }
 };
 
+
+// Get admin dashboard stats
+export const getAdminStats = async (req, res) => {
+  try {
+    const totalOrders = await Order.countDocuments();
+    const activeOrders = await Order.countDocuments({
+      status: { $in: ["Pending", "Preparing", "Ready"] },
+    });
+    const deliveredOrders = await Order.find({ status: "Delivered" });
+    const totalRevenue = deliveredOrders.reduce((sum, order) => sum + order.total, 0);
+    const avgOrderValue = deliveredOrders.length ? totalRevenue / deliveredOrders.length : 0;
+    const menuItems = await Menu.countDocuments();
+    const customerPhones = await Order.distinct("phone");
+    const totalCustomers = customerPhones.length;
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const dailyOrders = await Order.countDocuments({ createdAt: { $gte: startOfDay } });
+
+    res.json({
+      totalOrders,
+      activeOrders,
+      totalRevenue,
+      menuItems,
+      totalCustomers,
+      avgOrderValue: Math.round(avgOrderValue),
+      dailyOrders,
+    });
+  } catch (error) {
+    console.error("Error fetching admin stats:", error);
+    res.status(500).json({ error: "Failed to fetch admin stats" });
+  }
+};
 // Update order status
 export const updateOrderStatus = async (req, res) => {
   try {
