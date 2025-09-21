@@ -40,6 +40,9 @@ const userSchema = new mongoose.Schema(
             type: String, enum: ["admin", "customer"],
             default: "customer"
         },
+         isVerified: { type: Boolean, default: false },
+           otp: { type: String },
+  otpExpires: { type: Date },
         profileImage:{
             type:String,
             default:null,
