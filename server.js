@@ -15,7 +15,7 @@ const app = express();
 // Middleware
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://tastoriahotels.netlify.app","http://localhost:5174"],
+    origin: ["http://localhost:5173", "https://tastoriahotels.netlify.app" , "https://tastoria-cicd.vercel.app"],
     credentials: true,
   })
 );
