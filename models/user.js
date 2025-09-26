@@ -6,7 +6,7 @@ const addressSchema = new mongoose.Schema({
   city: String,
   state: String,
   zipCode: String,
-});
+}); 
 
 const walletSchema = new mongoose.Schema({
   balance: { type: Number, default: 0 },
