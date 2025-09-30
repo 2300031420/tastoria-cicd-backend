@@ -41,18 +41,21 @@ router.post("/signup", async (req, res) => {
     };
 
     // Send OTP via email
-    await transporter.sendMail({
-      from: `"Tastoria" <${process.env.GMAIL_USER}>`,
-      to: email,
-      subject: "Your OTP for Tastoria Signup",
-      html: `<p>Hello ${name},</p>
-             <p>Your OTP is: <b>${otp}</b></p>
-             <p>This OTP will expire in 10 minutes.</p>`,
-    });
+  try {
+  await transporter.sendMail({
+    from: `"Tastoria" <${process.env.GMAIL_USER}>`,
+    to: email,
+    subject: "Your OTP for Tastoria Signup",
+    html: `<p>Hello ${name},</p>
+           <p>Your OTP is: <b>${otp}</b></p>
+           <p>This OTP will expire in 10 minutes.</p>`,
+  });
+  console.log("✅ OTP email sent successfully to:", email);
+} catch (mailErr) {
+  console.error("❌ Nodemailer OTP send error:", mailErr);
+  return res.status(500).json({ message: "Failed to send OTP email" });
+}
 
-    res.status(200).json({
-      message: "OTP sent successfully. Please check your email to verify.",
-    });
   } catch (error) {
     console.error("Signup error:", error);
     res.status(500).json({ message: "Server error" });
